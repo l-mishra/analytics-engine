@@ -1,0 +1,25 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: analytics-service
+  data:
+    elasticsearch:
+      client:
+        reactive: false
+      repositories:
+        enabled: true
+      connection-timeout: 5s
+      socket-timeout: 3s
+      uris: http://elasticsearch:9200
+
+logging:
+  level:
+    com.poc.analytics.analyticsservice: DEBUG
+    org.springframework.data.elasticsearch: INFO
+
+clickhouse:
+  url: jdbc:clickhouse://clickhouse:8123/analytics
+  username: default
+  password: 

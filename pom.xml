@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>3.2.3</version>
+		<relativePath/>
+	</parent>
+	
+	<groupId>com.poc</groupId>
+	<artifactId>analytics-engine</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<packaging>pom</packaging>
+	<name>analytics-engine</name>
+	<description>Analytics Engine for ingestion, transformation and querying the aggregated data</description>
+
+	<modules>
+		<module>event-producer</module>
+		<module>event-processor</module>
+		<module>analytics-service</module>
+	</modules>
+
+	<properties>
+		<java.version>21</java.version>
+		<kafka.version>3.6.1</kafka.version>
+		<flink.version>1.16.1</flink.version>
+		<clickhouse.version>0.5.0</clickhouse.version>
+		<elasticsearch.version>8.11.1</elasticsearch.version>
+		<lombok.version>1.18.30</lombok.version>
+		<jackson.version>2.15.3</jackson.version>
+		<flink.elasticsearch.version>1.16.0</flink.elasticsearch.version>
+	</properties>
+
+	<repositories>
+		<repository>
+			<id>apache.snapshots</id>
+			<name>Apache Development Snapshot Repository</name>
+			<url>https://repository.apache.org/content/repositories/snapshots/</url>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>elastic</id>
+			<name>Elastic Repository</name>
+			<url>https://artifacts.elastic.co/maven/</url>
+		</repository>
+	</repositories>
+
+	<dependencyManagement>
+		<dependencies>
+			<!-- Kafka -->
+			<dependency>
+				<groupId>org.apache.kafka</groupId>
+				<artifactId>kafka-clients</artifactId>
+				<version>${kafka.version}</version>
+			</dependency>
+			
+			<!-- Flink Core -->
+			<dependency>
+				<groupId>org.apache.flink</groupId>
+				<artifactId>flink-streaming-java</artifactId>
+				<version>${flink.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.flink</groupId>
+				<artifactId>flink-clients</artifactId>
+				<version>${flink.version}</version>
+			</dependency>
+			
+			<!-- Flink Connectors -->
+			<dependency>
+				<groupId>org.apache.flink</groupId>
+				<artifactId>flink-connector-base</artifactId>
+				<version>${flink.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.flink</groupId>
+				<artifactId>flink-connector-kafka</artifactId>
+				<version>${flink.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.flink</groupId>
+				<artifactId>flink-connector-elasticsearch7</artifactId>
+				<version>${flink.elasticsearch.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.flink</groupId>
+				<artifactId>flink-connector-jdbc</artifactId>
+				<version>${flink.version}</version>
+			</dependency>
+			
+			<!-- Flink Formats -->
+			<dependency>
+				<groupId>org.apache.flink</groupId>
+				<artifactId>flink-json</artifactId>
+				<version>${flink.version}</version>
+			</dependency>
+			
+			<!-- ClickHouse -->
+			<dependency>
+				<groupId>com.clickhouse</groupId>
+				<artifactId>clickhouse-jdbc</artifactId>
+				<version>${clickhouse.version}</version>
+			</dependency>
+			
+			<!-- Elasticsearch -->
+			<dependency>
+				<groupId>co.elastic.clients</groupId>
+				<artifactId>elasticsearch-java</artifactId>
+				<version>${elasticsearch.version}</version>
+			</dependency>
+			
+			<!-- Common Dependencies -->
+			<dependency>
+				<groupId>org.projectlombok</groupId>
+				<artifactId>lombok</artifactId>
+				<version>${lombok.version}</version>
+				<optional>true</optional>
+			</dependency>
+			<dependency>
+				<groupId>com.fasterxml.jackson.core</groupId>
+				<artifactId>jackson-databind</artifactId>
+				<version>${jackson.version}</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.11.0</version>
+				<configuration>
+					<source>${java.version}</source>
+					<target>${java.version}</target>
+					<compilerArgs>
+						<arg>--add-opens</arg>
+						<arg>java.base/java.lang=ALL-UNNAMED</arg>
+					</compilerArgs>
+					<annotationProcessorPaths>
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+							<version>${lombok.version}</version>
+						</path>
+					</annotationProcessorPaths>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+</project>
