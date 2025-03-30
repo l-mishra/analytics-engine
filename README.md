@@ -176,5 +176,4 @@ curl -X GET "http://localhost:9200/_cat/indices?v"
 5. Create a Pull Request
 
 ## License
-
-This project is licensed under the MIT License - see the LICENSE file for details. 
+NA
