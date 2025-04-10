@@ -6,7 +6,7 @@ import org.springframework.context.annotation.PropertySource;
 @Configuration
 @PropertySource("classpath:application.properties")
 public class KafkaApplicationProperties {
-    public static final String KAFKA_BOOTSTRAP_SERVERS = "localhost:9092";
+    public static final String KAFKA_BOOTSTRAP_SERVERS = "localhost:29092";
     public static final String KAFKA_EVENTS_TOPIC = "user-events";
     public static final String KAFKA_ALERTS_TOPIC = "user-events";
     public static final String KAFKA_KEY_SERIALIZER = "org.apache.kafka.common.serialization.StringSerializer";

@@ -7,12 +7,8 @@ import com.poc.analytics.eventprocessor.sink.ClickHouseSink;
 import com.poc.analytics.eventprocessor.sink.ElasticsearchSinkBuilder;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.flink.api.common.eventtime.WatermarkStrategy;
+import java.util.Properties;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
-import org.apache.flink.connector.kafka.sink.KafkaRecordSerializationSchema;
-import org.apache.flink.connector.kafka.sink.KafkaSink;
-import org.apache.flink.connector.kafka.source.KafkaSource;
-import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.windowing.ProcessWindowFunction;
@@ -20,31 +16,33 @@ import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindo
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.util.Collector;
+import org.apache.flink.connector.kafka.source.KafkaSource;
+import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
+import org.apache.flink.connector.kafka.sink.KafkaSink;
+import org.apache.flink.connector.kafka.sink.KafkaRecordSerializationSchema;
+import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 
 public class EventProcessingJob {
 
     public static void createJob(StreamExecutionEnvironment env) throws Exception {
+        // Configure Kafka consumer properties
+        Properties kafkaProps = new Properties();
+        kafkaProps.setProperty("bootstrap.servers", "localhost:29092");
+        kafkaProps.setProperty("group.id", "event-processor-group");
+
         // Create Kafka source
-        KafkaSource<String> source = KafkaSource.<String>builder()
-                .setBootstrapServers("localhost:9092")
+        KafkaSource<String> kafkaSource = KafkaSource.<String>builder()
+                .setBootstrapServers("localhost:29092")
                 .setTopics("user-events")
                 .setGroupId("event-processor-group")
                 .setStartingOffsets(OffsetsInitializer.latest())
                 .setValueOnlyDeserializer(new SimpleStringSchema())
                 .build();
 
+        // Create Kafka source stream
         DataStream<String> eventStream = env.fromSource(
-                source,
-                WatermarkStrategy.<String>forMonotonousTimestamps()
-                        .withTimestampAssigner((event, timestamp) -> {
-                            try {
-                                ObjectMapper mapper = new ObjectMapper();
-                                Event parsedEvent = mapper.readValue(event, Event.class);
-                                return parsedEvent.getTimestamp().toEpochMilli();
-                            } catch (Exception e) {
-                                return 0L;
-                            }
-                        }),
+                kafkaSource,
+                WatermarkStrategy.noWatermarks(),
                 "Kafka Source");
 
         // Parse events
@@ -71,15 +69,16 @@ public class EventProcessingJob {
         // Store aggregated events in ClickHouse
         aggregatedEvents.addSink(ClickHouseSink.createSink());
 
-        // Send alerts for high-frequency events
-        KafkaSink<String> alertSink = KafkaSink.<String>builder()
-                .setBootstrapServers("localhost:9092")
-                .setRecordSerializer(KafkaRecordSerializationSchema.<String>builder()
+        // Create Kafka sink
+        KafkaSink<String> kafkaSink = KafkaSink.<String>builder()
+                .setBootstrapServers("localhost:29092")
+                .setRecordSerializer(KafkaRecordSerializationSchema.builder()
                         .setTopic("alerts")
                         .setValueSerializationSchema(new SimpleStringSchema())
                         .build())
                 .build();
 
+        // Send alerts for high-frequency events
         aggregatedEvents
                 .filter(event -> event.getCount() >= 1)
                 .map(event -> {
@@ -96,7 +95,7 @@ public class EventProcessingJob {
                         return "{}";
                     }
                 })
-                .sinkTo(alertSink);
+                .sinkTo(kafkaSink);
     }
 
     private static class EventWindowFunction

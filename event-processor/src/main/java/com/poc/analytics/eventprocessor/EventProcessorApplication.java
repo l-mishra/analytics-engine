@@ -20,6 +20,8 @@ public class EventProcessorApplication {
         Configuration conf = new Configuration();
         conf.setString(RestOptions.ADDRESS, "localhost");
         conf.setInteger(RestOptions.PORT, 8081);
+        conf.setString("jobmanager.rpc.address", "localhost");
+        conf.setInteger("jobmanager.rpc.port", 6123);
 
         // Create remote execution environment
         StreamExecutionEnvironment env = StreamExecutionEnvironment.createRemoteEnvironment(

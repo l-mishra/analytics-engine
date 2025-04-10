@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3'
 
 services:
   zookeeper:
@@ -16,22 +16,14 @@ services:
     depends_on:
       - zookeeper
     ports:
-      - "9092:9092"
+      - "29092:29092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-      KAFKA_DELETE_TOPIC_ENABLE: "true"
-      KAFKA_NUM_PARTITIONS: 3
-      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.1
@@ -60,7 +52,8 @@ services:
         hard: 262144
 
   jobmanager:
-    image: apache/flink:1.16.1
+    image: flink:1.16.1-scala_2.12-java11
+    platform: linux/arm64
     container_name: jobmanager
     ports:
       - "8081:8081"
@@ -72,12 +65,14 @@ services:
         state.backend: filesystem
         state.checkpoints.dir: file:///flink-checkpoints
         state.savepoints.dir: file:///flink-savepoints
+      - JVM_ARGS=--add-opens=java.base/java.lang=ALL-UNNAMED
     volumes:
       - flink-checkpoints:/flink-checkpoints
       - flink-savepoints:/flink-savepoints
 
   taskmanager:
-    image: apache/flink:1.16.1
+    image: flink:1.16.1-scala_2.12-java11
+    platform: linux/arm64
     container_name: taskmanager
     depends_on:
       - jobmanager
@@ -90,6 +85,7 @@ services:
         state.backend: filesystem
         state.checkpoints.dir: file:///flink-checkpoints
         state.savepoints.dir: file:///flink-savepoints
+      - JVM_ARGS=--add-opens=java.base/java.lang=ALL-UNNAMED
     volumes:
       - flink-checkpoints:/flink-checkpoints
       - flink-savepoints:/flink-savepoints

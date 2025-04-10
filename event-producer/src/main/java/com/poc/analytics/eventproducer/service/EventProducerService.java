@@ -1,14 +1,14 @@
 package com.poc.analytics.eventproducer.service;
 
 import com.poc.analytics.eventproducer.config.KafkaApplicationProperties;
-import com.poc.analytics.eventproducer.model.Event;
+import com.poc.analytics.eventproducer.model.UserEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -21,58 +21,49 @@ import java.util.concurrent.ThreadLocalRandom;
 @RequiredArgsConstructor
 public class EventProducerService {
 
-    private final KafkaTemplate<String, Event> kafkaTemplate;
+    private final KafkaTemplate<String, UserEvent> kafkaTemplate;
 
     private final List<String> eventTypes = Arrays.asList(
             "CLICK", "PAGE_LOAD", "SCROLL", "HOVER", "FORM_SUBMIT",
             "BUTTON_CLICK", "LINK_CLICK", "VIDEO_PLAY", "VIDEO_PAUSE");
 
-    private final List<String> browsers = Arrays.asList(
-            "Chrome", "Firefox", "Safari", "Edge", "Opera");
-
-    private final List<String> deviceTypes = Arrays.asList(
-            "DESKTOP", "MOBILE", "TABLET");
-
-    private final List<String> countries = Arrays.asList(
-            "US", "UK", "IN", "DE", "FR", "JP", "CA", "AU");
+    private final List<String> productIds = Arrays.asList(
+            "product1", "product2", "product3", "product4", "product5");
 
     @Scheduled(fixedRate = 1000) // Generate events every second
     public void generateAndSendEvents() {
         int numEvents = ThreadLocalRandom.current().nextInt(1, 10);
         for (int i = 0; i < numEvents; i++) {
-            Event event = generateRandomEvent();
+            UserEvent event = generateRandomEvent();
             kafkaTemplate.send(KafkaApplicationProperties.KAFKA_EVENTS_TOPIC, event.getEventId(), event)
-                    .whenComplete((result, ex) -> {
-                        if (ex == null) {
-                            log.debug("Sent event: {}", event.getEventId());
-                        } else {
-                            log.error("Failed to send event: {}", event.getEventId(), ex);
-                        }
-                    });
+                    .addCallback(
+                            result -> log.debug("Sent event: {}", event.getEventId()),
+                            ex -> log.error("Failed to send event: {}", event.getEventId(), ex));
         }
     }
 
-    private Event generateRandomEvent() {
-        Event event = new Event();
-        event.setEventId(UUID.randomUUID().toString());
-        event.setEventType(eventTypes.get(ThreadLocalRandom.current().nextInt(eventTypes.size())));
-        event.setUserId("user-" + ThreadLocalRandom.current().nextInt(1000, 10000));
-        event.setSessionId("session-" + ThreadLocalRandom.current().nextInt(100, 1000));
-        event.setPageUrl("https://example.com/page" + ThreadLocalRandom.current().nextInt(1, 10));
-        event.setElementId("element-" + ThreadLocalRandom.current().nextInt(1, 100));
-        event.setTimestamp(Instant.now());
-        event.setBrowser(browsers.get(ThreadLocalRandom.current().nextInt(browsers.size())));
-        event.setDeviceType(deviceTypes.get(ThreadLocalRandom.current().nextInt(deviceTypes.size())));
-        event.setCountry(countries.get(ThreadLocalRandom.current().nextInt(countries.size())));
-        event.setCity("City-" + ThreadLocalRandom.current().nextInt(1, 100));
-
-        Map<String, Object> metadata = new HashMap<>();
+    private UserEvent generateRandomEvent() {
+        Map<String, String> metadata = new HashMap<>();
         metadata.put("screenResolution", "1920x1080");
         metadata.put("language", "en-US");
         metadata.put("timeZone", "UTC");
         metadata.put("platform", "web");
-        event.setMetadata(metadata);
 
-        return event;
+        Map<String, Object> eventData = new HashMap<>();
+        eventData.put("browser", "Chrome");
+        eventData.put("deviceType", "DESKTOP");
+        eventData.put("country", "US");
+        eventData.put("city", "New York");
+
+        return UserEvent.builder()
+                .eventId(UUID.randomUUID().toString())
+                .timestamp(LocalDateTime.now())
+                .userId("user-" + ThreadLocalRandom.current().nextInt(1000, 10000))
+                .eventType(eventTypes.get(ThreadLocalRandom.current().nextInt(eventTypes.size())))
+                .sessionId("session-" + ThreadLocalRandom.current().nextInt(100, 1000))
+                .productId(productIds.get(ThreadLocalRandom.current().nextInt(productIds.size())))
+                .metadata(metadata)
+                .eventData(eventData)
+                .build();
     }
 }

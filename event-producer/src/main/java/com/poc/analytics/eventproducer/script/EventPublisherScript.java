@@ -1,6 +1,5 @@
 package com.poc.analytics.eventproducer.script;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.poc.analytics.eventproducer.config.KafkaApplicationProperties;
 import com.poc.analytics.eventproducer.model.UserEvent;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,10 +18,7 @@ import java.util.UUID;
 public class EventPublisherScript implements CommandLineRunner {
 
         @Autowired
-        private KafkaTemplate<String, String> kafkaTemplate;
-
-        @Autowired
-        private ObjectMapper objectMapper;
+        private KafkaTemplate<String, UserEvent> kafkaTemplate;
 
         private final Random random = new Random();
         private final List<String> eventTypes = Arrays.asList(
@@ -36,8 +32,7 @@ public class EventPublisherScript implements CommandLineRunner {
                 // Publish 1000 events
                 for (int i = 0; i < 1000; i++) {
                         UserEvent event = generateRandomEvent();
-                        String eventJson = objectMapper.writeValueAsString(event);
-                        kafkaTemplate.send(KafkaApplicationProperties.KAFKA_EVENTS_TOPIC, eventJson);
+                        kafkaTemplate.send(KafkaApplicationProperties.KAFKA_EVENTS_TOPIC, event);
 
                         // Add a small delay between events
                         Thread.sleep(10);
